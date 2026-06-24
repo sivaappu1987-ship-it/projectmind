@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProjectMind AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.3/dist/purify.min.js"></script>
+    <style>
+        :root {
+            --ink: #0f172a;
+            --muted: #64748b;
+            --line: #e2e8f0;
+            --panel: #ffffff;
+            --page: #f1f5f9;
+            --blue: #3b82f6;
+            --blue-dark: #1d4ed8;
+            --green: #10b981;
+            --amber: #f59e0b;
+            --rose: #f43f5e;
+            --purple: #8b5cf6;
+            --sidebar: #0f172a;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: var(--page); color: var(--ink); font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; }
+        .shell { min-height: 100vh; display: grid; grid-template-columns: 240px minmax(0,1fr); }
+
+        /* SIDEBAR */
+        .sidebar { background: var(--sidebar); color: #94a3b8; padding: 20px 14px; display: flex; flex-direction: column; }
+        .brand { color: #fff; text-decoration: none; display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.1rem; margin-bottom: 32px; }
+        .brand-mark { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #3b82f6, #10b981); display: grid; place-items: center; flex-shrink: 0; }
+        .nav-section { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #475569; padding: 0 10px; margin: 18px 0 6px; }
+        .nav-link { color: #94a3b8; border-radius: 8px; padding: 9px 10px; font-weight: 600; display: flex; align-items: center; gap: 9px; margin-bottom: 2px; transition: all .15s; font-size: 13.5px; }
+        .nav-link:hover { color: #fff; background: rgba(255,255,255,.07); }
+        .nav-link.active { color: #fff; background: rgba(59,130,246,.25); border-left: 3px solid #3b82f6; }
+        .nav-link i { font-size: 15px; }
+        .sidebar-footer { margin-top: auto; padding-top: 20px; border-top: 1px solid #1e293b; font-size: 12px; color: #475569; }
+
+        /* TOPBAR */
+        .main { min-width: 0; display: flex; flex-direction: column; }
+        .topbar { height: 62px; display: flex; align-items: center; justify-content: space-between; background: #fff; border-bottom: 1px solid var(--line); padding: 0 28px; flex-shrink: 0; }
+        .topbar-title { font-size: 1.05rem; font-weight: 800; margin: 0; }
+        .badge-pill { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); background: #f8fafc; border-radius: 999px; padding: 4px 10px; font-size: 11.5px; font-weight: 600; color: var(--muted); }
+        .badge-pill.green { border-color: #bbf7d0; background: #f0fdf4; color: #15803d; }
+        .badge-pill.blue  { border-color: #bfdbfe; background: #eff6ff; color: #1d4ed8; }
+
+        /* PAGES */
+        .content { flex: 1; overflow-y: auto; }
+        .page { display: none; padding: 26px 28px 48px; }
+        .page.active { display: block; }
+        .page-header { margin-bottom: 22px; }
+        .page-header h2 { font-size: 1.35rem; font-weight: 800; margin: 0 0 4px; }
+        .page-header p { color: var(--muted); margin: 0; }
+
+        /* METRIC CARDS */
+        .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+        .metric-card { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px; display: flex; align-items: flex-start; gap: 14px; }
+        .metric-icon { width: 40px; height: 40px; border-radius: 8px; display: grid; place-items: center; font-size: 18px; flex-shrink: 0; }
+        .metric-icon.blue   { background: #eff6ff; color: #3b82f6; }
+        .metric-icon.green  { background: #f0fdf4; color: #10b981; }
+        .metric-icon.amber  { background: #fffbeb; color: #f59e0b; }
+        .metric-icon.purple { background: #f5f3ff; color: #8b5cf6; }
+        .metric-icon.rose   { background: #fff1f2; color: #f43f5e; }
+        .metric-icon.cyan   { background: #ecfeff; color: #06b6d4; }
+        .metric-val { font-size: 1.8rem; font-weight: 800; line-height: 1; margin: 0; transition: all .4s; }
+        .metric-label { font-size: 11.5px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; margin-top: 2px; }
+        /* PANELS */
+        .panel { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 20px; margin-bottom: 18px; }
+        .panel-title { font-weight: 800; font-size: .95rem; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+        .two-col { display: grid; grid-template-columns: minmax(280px, 380px) minmax(0,1fr); gap: 18px; align-items: start; }
+        .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+        /* FORMS */
+        .form-label { font-weight: 700; font-size: 12.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
+        .form-control, .form-select { border-radius: 8px; border: 1px solid var(--line); font-size: 13.5px; padding: 9px 12px; transition: border .15s, box-shadow .15s; }
+        .form-control:focus, .form-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.15); outline: none; }
+        .btn { border-radius: 8px; font-weight: 700; font-size: 13px; padding: 9px 16px; transition: all .15s; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-primary { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+        .btn-primary:hover { background: #1d4ed8; border-color: #1d4ed8; }
+        .btn-outline-primary { border-color: #3b82f6; color: #3b82f6; background: transparent; }
+        .btn-outline-primary:hover { background: #eff6ff; }
+        .btn-outline-success { border-color: #10b981; color: #10b981; background: transparent; }
+        .btn-outline-success:hover { background: #f0fdf4; }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+        /* AI RESULT BOX */
+        .result-box { background: #f8fafc; border: 1px solid var(--line); border-radius: 8px; padding: 20px; min-height: 200px; line-height: 1.65; color: #1e293b; font-size: 13.5px; }
+        .result-box.has-content { background: #fff; border-color: #bfdbfe; }
+        .result-box h1,.result-box h2,.result-box h3 { font-size: 1rem; font-weight: 800; margin: 14px 0 6px; color: var(--ink); }
+        .result-box h1:first-child,.result-box h2:first-child,.result-box h3:first-child { margin-top: 0; }
+        .result-box ul,.result-box ol { padding-left: 18px; margin: 6px 0; }
+        .result-box li { margin-bottom: 4px; }
+        .result-box p { margin: 6px 0; }
+        .result-box strong { font-weight: 700; }
+        .result-box code { background: #f1f5f9; border-radius: 4px; padding: 1px 5px; font-size: 12px; }
+        .result-placeholder { color: var(--muted); font-style: italic; }
+
+        /* LOADER */
+        .loader-wrap { display: none; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .loader-wrap.show { display: flex; }
+        .spinner { width: 20px; height: 20px; border: 2.5px solid #dbe4f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin .7s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .thinking-text { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+
+        /* CONFIDENCE BAR */
+        .confidence-wrap { margin: 10px 0 0; }
+        .confidence-label { font-size: 11.5px; font-weight: 700; color: var(--muted); margin-bottom: 4px; display: flex; justify-content: space-between; }
+        .confidence-bar { height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
+        .confidence-fill { height: 100%; border-radius: 999px; transition: width .8s cubic-bezier(.4,0,.2,1); }
+        .confidence-fill.high   { background: linear-gradient(90deg, #10b981, #34d399); }
+        .confidence-fill.medium { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+        .confidence-fill.low    { background: linear-gradient(90deg, #f43f5e, #fb7185); }
+
+        /* ACTIVITY + TABLES */
+        .activity-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
+        .activity-item:last-child { border-bottom: none; }
+        .avatar { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 800; flex-shrink: 0; color: #fff; }
+        .issue-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid #f8fafc; gap: 8px; }
+        .issue-row:last-child { border-bottom: none; }
+        .issue-title { font-size: 13px; font-weight: 600; flex: 1; }
+        .tag { display: inline-block; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
+        .tag-bug    { background: #fff1f2; color: #f43f5e; }
+        .tag-feat   { background: #f0fdf4; color: #15803d; }
+        .tag-doc    { background: #f0f9ff; color: #0369a1; }
+        .tag-sec    { background: #fff7ed; color: #c2410c; }
+        .tag-other  { background: #f5f3ff; color: #7c3aed; }
+        .file-chip  { display: inline-flex; align-items: center; gap: 5px; background: #f8fafc; border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s; color: #3b82f6; }
+        .file-chip:hover { background: #eff6ff; border-color: #bfdbfe; }
+
+        /* EXPLAINABILITY PANEL */
+        .explain-toggle { font-size: 12px; color: var(--muted); cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; border: none; background: none; padding: 0; margin-top: 10px; }
+        .explain-toggle:hover { color: #3b82f6; }
+        .explain-box { display: none; background: #0f172a; color: #94a3b8; border-radius: 8px; padding: 14px; font-size: 11.5px; font-family: monospace; line-height: 1.6; margin-top: 8px; white-space: pre-wrap; max-height: 220px; overflow-y: auto; }
+        .explain-box.show { display: block; }
+
+        /* CONTRIBUTOR CARD */
+        .contrib-card { background: #f8fafc; border: 1px solid var(--line); border-radius: 8px; padding: 14px; display: flex; align-items: center; gap: 12px; }
+        .contrib-info { flex: 1; min-width: 0; }
+        .contrib-name { font-weight: 700; font-size: 13.5px; }
+        .contrib-commits { font-size: 12px; color: var(--muted); }
+        .contrib-bar { height: 4px; background: #e2e8f0; border-radius: 999px; margin-top: 6px; overflow: hidden; }
+        .contrib-bar-fill { height: 100%; background: linear-gradient(90deg, #3b82f6, #8b5cf6); border-radius: 999px; }
+
+        /* ERROR STATE */
+        .error-box { background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; padding: 12px 16px; color: #be123c; font-size: 13px; font-weight: 600; display: none; margin-top: 10px; }
+        .error-box.show { display: block; }
+
+        @media (max-width: 900px) {
+            .shell { grid-template-columns: 1fr; }
+            .sidebar { min-height: auto; }
+            .metric-grid, .two-col, .three-col { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="shell">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <a class="brand" href="/">
+            <span class="brand-mark"><i class="bi bi-diagram-3 text-white"></i></span>
+            ProjectMind AI
+        </a>
+        <nav>
+            <div class="nav-section">Main</div>
+            <a class="nav-link active" href="#" data-tab="overview"><i class="bi bi-grid-1x2-fill"></i> Project Overview</a>
+            <a class="nav-link" href="#" data-tab="connect"><i class="bi bi-plug-fill"></i> Connect Project</a>
+            <div class="nav-section">AI Features</div>
+            <a class="nav-link" href="#" data-tab="code"><i class="bi bi-file-code-fill"></i> Code Understanding</a>
+            <a class="nav-link" href="#" data-tab="tasks"><i class="bi bi-person-check-fill"></i> Task Assignment</a>
+            <a class="nav-link" href="#" data-tab="onboarding"><i class="bi bi-compass-fill"></i> Onboarding</a>
+            <a class="nav-link" href="#" data-tab="docs"><i class="bi bi-journal-check"></i> Docs Health</a>
+            <a class="nav-link" href="#" data-tab="logs"><i class="bi bi-activity"></i> AI Activity Log</a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <i class="bi bi-circle-fill text-success" style="font-size:8px"></i>
+                <span>Gemini 2.5 Flash</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-gitlab" style="color:#fc6d26"></i>
+                <span id="sidebarProjectName">AcmeCommerce Platform</span>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main">
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <h1 class="topbar-title" id="topbarTitle">Project Overview</h1>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge-pill green"><i class="bi bi-stars"></i> Gemini-powered</span>
+                <span class="badge-pill blue"><i class="bi bi-gitlab"></i> GitLab-ready</span>
+                <button class="btn btn-sm btn-outline-primary" onclick="refreshStats()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+            </div>
+        </header>
+
+        <div class="content">
+
+        <!-- ======== OVERVIEW PAGE ======== -->
+        <section class="page active" id="overview">
+            <div class="page-header">
+                <h2 id="overviewProjectName">AcmeCommerce Platform</h2>
+                <p id="overviewProjectDescription">Full project intelligence - code, contributors, issues, and docs in one view.</p>
+            </div>
+
+            <div class="metric-grid">
+                <div class="metric-card">
+                    <div class="metric-icon blue"><i class="bi bi-people-fill"></i></div>
+                    <div><p class="metric-val" id="s-devs">-</p><p class="metric-label">Contributors</p></div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon rose"><i class="bi bi-exclamation-circle-fill"></i></div>
+                    <div><p class="metric-val" id="s-issues">-</p><p class="metric-label">Open Issues</p></div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon green"><i class="bi bi-file-earmark-code-fill"></i></div>
+                    <div><p class="metric-val" id="s-files">-</p><p class="metric-label">Source Files</p></div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon purple"><i class="bi bi-journal-text"></i></div>
+                    <div><p class="metric-val" id="s-docs">-</p><p class="metric-label">Docs</p></div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon amber"><i class="bi bi-git"></i></div>
+                    <div><p class="metric-val" id="s-commits">-</p><p class="metric-label">Commits</p></div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon cyan"><i class="bi bi-signpost-split-fill"></i></div>
+                    <div><p class="metric-val" id="s-mrs">-</p><p class="metric-label">Merge Requests</p></div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon green"><i class="bi bi-check-circle-fill"></i></div>
+                    <div><p class="metric-val" id="s-merged">-</p><p class="metric-label">Merged MRs</p></div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon rose"><i class="bi bi-hourglass-split"></i></div>
+                    <div><p class="metric-val" id="s-open-mrs">-</p><p class="metric-label">Open MRs</p></div>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-lg-4">
+                    <div class="panel h-100">
+                        <div class="panel-title"><i class="bi bi-trophy-fill text-warning"></i> Top Contributors</div>
+                        <div id="contrib-list">
+                            <div class="text-muted" style="font-size:13px">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="panel h-100">
+                        <div class="panel-title"><i class="bi bi-exclamation-circle text-danger"></i> Open Issues</div>
+                        <div id="issues-list">
+                            <div class="text-muted" style="font-size:13px">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="panel h-100">
+                        <div class="panel-title"><i class="bi bi-clock-history text-primary"></i> Recent Commits</div>
+                        <div id="commits-list">
+                            <div class="text-muted" style="font-size:13px">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel mt-0">
+                <div class="panel-title"><i class="bi bi-folder2-open text-secondary"></i> Source Files - click to explain</div>
+                <div id="file-chips" class="d-flex flex-wrap gap-2">
+                    <span class="text-muted" style="font-size:13px">Loading...</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======== CONNECT PAGE ======== -->
+        <section class="page" id="connect">
+            <div class="page-header">
+                <h2><i class="bi bi-plug-fill me-2" style="color:#3b82f6"></i>Connect Project</h2>
+                <p>Import an existing repository without changing its workflow. ProjectMind builds the knowledge layer above it.</p>
+            </div>
+            <div class="two-col">
+                <div>
+                    <div class="panel">
+                        <div class="panel-title"><i class="bi bi-folder-plus"></i> Local Repository</div>
+                        <label class="form-label">Project name</label>
+                        <input class="form-control mb-2" id="localProjectName" value="ProjectMind Local">
+                        <label class="form-label">Directory path</label>
+                        <input class="form-control mb-3" id="localDirectoryPath" placeholder="C:\path\to\repo">
+                        <button class="btn btn-primary w-100" onclick="importLocalProject()">
+                            <i class="bi bi-folder2-open"></i> Import Local Project
+                        </button>
+                        <div class="error-box" id="importError"></div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-title"><i class="bi bi-gitlab"></i> GitLab Project</div>
+                        <label class="form-label">GitLab project ID</label>
+                        <input type="number" class="form-control mb-2" id="gitlabProjectId" placeholder="Uses GITLAB_PROJECT_ID if empty">
+                        <label class="form-label">Branch or ref</label>
+                        <input class="form-control mb-3" id="gitlabProjectRef" value="main">
+                        <button class="btn btn-outline-primary w-100" onclick="importGitLabProject()">
+                            <i class="bi bi-cloud-arrow-down"></i> Sync GitLab Project
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <div class="loader-wrap" id="importLoader">
+                        <div class="spinner"></div>
+                        <span class="thinking-text">Building the project knowledge base...</span>
+                    </div>
+                    <div class="result-box result-placeholder" id="importOutputText">
+                        Connect a repository to collect source files, docs, contributors, issues, merge requests, and commit history.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======== CODE UNDERSTANDING PAGE ======== -->
+        <section class="page" id="code">
+            <div class="page-header">
+                <h2><i class="bi bi-file-code-fill me-2" style="color:#3b82f6"></i>Code Understanding</h2>
+                <p>AI-powered file explanations with full project context - related files, issues, docs, and the people who know the code best.</p>
+            </div>
+            <div class="two-col">
+                <div>
+                    <div class="panel">
+                        <div class="panel-title"><i class="bi bi-search"></i> Select a File</div>
+                        <label class="form-label">File path</label>
+                        <input class="form-control mb-3" id="codeFileInput" value="backend/auth.py" placeholder="e.g. backend/auth.py">
+                        <div class="d-flex flex-wrap gap-2 mb-3" id="code-quick-files"></div>
+                        <button class="btn btn-primary w-100" onclick="runCodeAgent()">
+                            <i class="bi bi-stars"></i> Explain with AI
+                        </button>
+                        <div class="error-box" id="codeError"></div>
+                    </div>
+                    <div class="panel" id="code-context-panel" style="display:none">
+                        <div class="panel-title"><i class="bi bi-diagram-2"></i> Context Used</div>
+                        <div id="code-context-body" style="font-size:13px"></div>
+                        <button class="explain-toggle" onclick="toggleExplain('code-prompt-box', this)">
+                            <i class="bi bi-code-slash"></i> Show AI prompt
+                        </button>
+                        <div class="explain-box" id="code-prompt-box"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="loader-wrap" id="codeLoader">
+                        <div class="spinner"></div>
+                        <span class="thinking-text">ProjectMind AI is analysing the file...</span>
+                    </div>
+                    <div class="result-box result-placeholder" id="codeOutputText">
+                        Select a file and click <strong>Explain with AI</strong> to get a full contextual breakdown.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======== TASK ASSIGNMENT PAGE ======== -->
+        <section class="page" id="tasks">
+            <div class="page-header">
+                <h2><i class="bi bi-person-check-fill me-2" style="color:#10b981"></i>Smart Task Assignment</h2>
+                <p>Contributor recommendations powered by commit history, issue overlap, and past ownership signals.</p>
+            </div>
+            <div class="two-col">
+                <div>
+                    <div class="panel">
+                        <div class="panel-title"><i class="bi bi-hash"></i> Assign Existing Issue</div>
+                        <label class="form-label">Issue ID</label>
+                        <div class="input-group mb-3">
+                            <input type="number" class="form-control" id="taskIssueInput" value="24">
+                            <button class="btn btn-primary" onclick="runTaskAgent()"><i class="bi bi-person-check"></i> Assign</button>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 mb-2" id="task-quick-issues"></div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-title"><i class="bi bi-plus-circle"></i> Create New Issue</div>
+                        <label class="form-label">Title</label>
+                        <input class="form-control mb-2" id="newIssueTitle" value="Authentication timeout bug">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control mb-2" id="newIssueDescription" rows="3">Users are logged out earlier than expected after the auth token timeout changed.</textarea>
+                        <label class="form-label">Labels</label>
+                        <input class="form-control mb-3" id="newIssueLabels" value="bug, authentication, backend">
+                        <button class="btn btn-outline-primary w-100" onclick="createIssueAndAssign()">
+                            <i class="bi bi-plus-circle"></i> Create &amp; Recommend
+                        </button>
+                        <div class="error-box" id="taskError"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="loader-wrap" id="taskLoader">
+                        <div class="spinner"></div>
+                        <span class="thinking-text">Analysing contributor signals...</span>
+                    </div>
+                    <div class="result-box result-placeholder" id="taskOutputText">
+                        Run the assignment agent for an issue to see who is best suited.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======== ONBOARDING PAGE ======== -->
+        <section class="page" id="onboarding">
+            <div class="page-header">
+                <h2><i class="bi bi-compass-fill me-2" style="color:#8b5cf6"></i>Contributor Onboarding</h2>
+                <p>AI-generated mentors, first tasks, and personalised learning paths for new developers.</p>
+            </div>
+            <div class="two-col">
+                <div>
+                    <div class="panel">
+                        <div class="panel-title"><i class="bi bi-person-plus-fill"></i> Onboard New Developer</div>
+                        <label class="form-label">Name</label>
+                        <input class="form-control form-control mb-3" id="newContributorName" value="Jordan">
+                        <button class="btn btn-primary w-100 mb-3" onclick="runNewOnboardingAgent()">
+                            <i class="bi bi-stars"></i> Generate AI Plan
+                        </button>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-title"><i class="bi bi-person-lines-fill"></i> Existing Contributor Plan</div>
+                        <label class="form-label">Contributor ID</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="onboardInput" value="3">
+                            <button class="btn btn-outline-primary" onclick="runOnboardingAgent()"><i class="bi bi-arrow-right"></i></button>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 mt-3" id="onboard-quick-contributors"></div>
+                        <div class="error-box" id="onboardError"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="loader-wrap" id="onboardLoader">
+                        <div class="spinner"></div>
+                        <span class="thinking-text">AI is generating a personalised onboarding plan...</span>
+                    </div>
+                    <div class="result-box result-placeholder" id="onboardOutputText">
+                        Enter a name or contributor ID and generate an AI-powered onboarding roadmap.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======== DOCS HEALTH PAGE ======== -->
+        <section class="page" id="docs">
+            <div class="page-header">
+                <h2><i class="bi bi-journal-check me-2" style="color:#f59e0b"></i>Documentation Health</h2>
+                <p>Detect missing or outdated docs and use AI to draft a replacement in one click.</p>
+            </div>
+            <div class="two-col">
+                <div>
+                    <div class="panel">
+                        <div class="panel-title"><i class="bi bi-clipboard2-pulse"></i> Health Scan</div>
+                        <p style="font-size:13px;color:var(--muted)">Scans all source files and flags missing or stale documentation.</p>
+                        <button class="btn btn-primary w-100 mb-3" onclick="runDocsAgent()">
+                            <i class="bi bi-clipboard2-pulse"></i> Run Scan
+                        </button>
+                        <div id="docs-summary" style="display:none">
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    <div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:8px;padding:10px;text-align:center">
+                                        <div style="font-size:1.6rem;font-weight:800;color:#f43f5e" id="docs-missing-count">0</div>
+                                        <div style="font-size:11px;color:#be123c;font-weight:700">Missing</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px;text-align:center">
+                                        <div style="font-size:1.6rem;font-weight:800;color:#f59e0b" id="docs-outdated-count">0</div>
+                                        <div style="font-size:11px;color:#b45309;font-weight:700">Outdated</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-title"><i class="bi bi-magic"></i> Generate Docs</div>
+                        <label class="form-label">File path</label>
+                        <input class="form-control mb-3" id="docGenInput" value="backend/auth.py">
+                        <button class="btn btn-outline-success w-100" onclick="generateDocs()">
+                            <i class="bi bi-magic"></i> Draft with AI
+                        </button>
+                        <div class="error-box" id="docsError"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="loader-wrap" id="docsLoader">
+                        <div class="spinner"></div>
+                        <span class="thinking-text">Scanning documentation coverage...</span>
+                    </div>
+                    <div class="result-box result-placeholder" id="docsOutputText">
+                        Run the documentation scan or draft docs for a specific file.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======== AI LOGS PAGE ======== -->
+        <section class="page" id="logs">
+            <div class="page-header">
+                <h2><i class="bi bi-activity me-2" style="color:#10b981"></i>AI Activity Log</h2>
+                <p>Every AI decision - code explanations, task assignments, onboarding plans - recorded for full explainability.</p>
+            </div>
+            <div class="panel">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="panel-title mb-0"><i class="bi bi-database"></i> Recent AI Decisions</div>
+                    <button class="btn btn-sm btn-outline-primary" onclick="loadLogs()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+                </div>
+                <div id="logs-table-wrap">
+                    <div class="text-muted" style="font-size:13px">Loading logs...</div>
+                </div>
+            </div>
+        </section>
+
+        </div><!-- /content -->
+    </main>
+</div><!-- /shell -->
+
+<script>
+// NAVIGATION
+const TAB_TITLES = {
+    overview: "Project Overview",
+    connect: "Connect Project",
+    code: "Code Understanding",
+    tasks: "Task Assignment",
+    onboarding: "Contributor Onboarding",
+    docs: "Docs Health",
+    logs: "AI Activity Log"
+};
+
+document.querySelectorAll(".nav-link").forEach(link => {
+    link.addEventListener("click", e => {
+        e.preventDefault();
+        const tab = link.dataset.tab;
+        document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
+        document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+        link.classList.add("active");
+        document.getElementById(tab).classList.add("active");
+        document.getElementById("topbarTitle").textContent = TAB_TITLES[tab];
+    });
+});
+
+// HELPERS
+function setLoader(id, on) {
+    document.getElementById(id).classList.toggle("show", on);
+}
+function showError(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = "[!] " + msg;
+    el.classList.add("show");
+}
+function clearError(id) {
+    const el = document.getElementById(id);
+    el.textContent = "";
+    el.classList.remove("show");
+}
+function renderMd(id, text) {
+    const el = document.getElementById(id);
+    const html = marked.parse(text || "");
+    el.innerHTML = window.DOMPurify ? DOMPurify.sanitize(html) : html;
+    el.classList.remove("result-placeholder");
+    el.classList.add("has-content");
+}
+function toggleExplain(boxId, btn) {
+    const box = document.getElementById(boxId);
+    box.classList.toggle("show");
+    btn.innerHTML = box.classList.contains("show")
+        ? '<i class="bi bi-code-slash"></i> Hide AI prompt'
+        : '<i class="bi bi-code-slash"></i> Show AI prompt';
+}
+function avatarColor(name) {
+    const colors = ["#3b82f6","#10b981","#8b5cf6","#f59e0b","#f43f5e","#06b6d4","#ec4899","#14b8a6"];
+    let h = 0;
+    for (let c of name) h = (h * 31 + c.charCodeAt(0)) & 0xffffffff;
+    return colors[Math.abs(h) % colors.length];
+}
+function initials(name) {
+    return name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2);
+}
+function labelTag(labels) {
+    if (!labels) return "";
+    const l = labels.toLowerCase();
+    if (l.includes("security") || l.includes("critical")) return '<span class="tag tag-sec">security</span>';
+    if (l.includes("bug"))     return '<span class="tag tag-bug">bug</span>';
+    if (l.includes("feature")) return '<span class="tag tag-feat">feature</span>';
+    if (l.includes("doc"))     return '<span class="tag tag-doc">docs</span>';
+    return `<span class="tag tag-other">${labels.split(",")[0].trim()}</span>`;
+}
+function animateCount(id, target) {
+    const el = document.getElementById(id);
+    let current = 0;
+    const step = Math.max(1, Math.ceil(target / 25));
+    const timer = setInterval(() => {
+        current = Math.min(current + step, target);
+        el.textContent = current;
+        if (current >= target) clearInterval(timer);
+    }, 40);
+}
+
+// OVERVIEW / STATS
+let statsCache = null;
+
+async function refreshStats() {
+    try {
+        const res = await fetch("/api/v1/dashboard/stats");
+        if (!res.ok) throw new Error(res.statusText);
+        const d = await res.json();
+        statsCache = d;
+
+        const project = d.current_project || {};
+        const projectName = project.name || "ProjectMind AI";
+        document.getElementById("overviewProjectName").textContent = projectName;
+        document.getElementById("sidebarProjectName").textContent = projectName;
+        document.getElementById("overviewProjectDescription").textContent =
+            project.description || "Full project intelligence - code, contributors, issues, and docs in one view.";
+
+        animateCount("s-devs",     d.contributors);
+        animateCount("s-issues",   d.issues);
+        animateCount("s-files",    d.files);
+        animateCount("s-docs",     d.documentation);
+        animateCount("s-commits",  d.commits);
+        animateCount("s-mrs",      d.merge_requests);
+        animateCount("s-merged",   d.merged_merge_requests);
+        animateCount("s-open-mrs", d.open_merge_requests);
+
+        // Top contributors
+        const contribEl = document.getElementById("contrib-list");
+        const maxC = Math.max(...(d.top_contributors || []).map(c => c.commits), 1);
+        contribEl.innerHTML = (d.top_contributors || []).map(c => `
+            <div class="contrib-card mb-2">
+                <div class="avatar" style="background:${avatarColor(c.name)}">${initials(c.name)}</div>
+                <div class="contrib-info">
+                    <div class="contrib-name">${c.name}</div>
+                    <div class="contrib-commits">${c.commits} commits</div>
+                    <div class="contrib-bar"><div class="contrib-bar-fill" style="width:${Math.round(c.commits/maxC*100)}%"></div></div>
+                </div>
+            </div>`).join("");
+
+        // Recent issues
+        const issuesEl = document.getElementById("issues-list");
+        issuesEl.innerHTML = (d.recent_issues || []).map(i => `
+            <div class="issue-row">
+                <span class="issue-title">#${i.id} ${i.title}</span>
+                ${labelTag(i.labels)}
+            </div>`).join("");
+
+        // Recent commits
+        const commitsEl = document.getElementById("commits-list");
+        commitsEl.innerHTML = (d.recent_commits || []).map(c => `
+            <div class="activity-item">
+                <i class="bi bi-git" style="color:#64748b;margin-top:2px"></i>
+                <span style="font-size:12.5px;color:#334155">${c.message}</span>
+            </div>`).join("");
+
+        // File chips
+        const chipsEl = document.getElementById("file-chips");
+        chipsEl.innerHTML = (d.file_list || []).map(f => {
+            const ext = f.path.split(".").pop();
+            const icon = ext === "py" ? "bi-filetype-py" : ext === "md" ? "bi-markdown" : "bi-file-earmark-code";
+            return `<span class="file-chip" onclick="explainFileFromOverview('${f.path}')"><i class="bi ${icon}"></i>${f.path}</span>`;
+        }).join("");
+
+        // Populate quick-pick chips on code tab
+        buildQuickFiles(d.file_list || []);
+        buildQuickIssues(d.recent_issues || []);
+        buildQuickContributors(d.top_contributors || []);
+
+    } catch (err) {
+        console.error("Stats error:", err);
+    }
+}
+
+function explainFileFromOverview(path) {
+    document.getElementById("codeFileInput").value = path;
+    document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    document.querySelector('[data-tab="code"]').classList.add("active");
+    document.getElementById("code").classList.add("active");
+    document.getElementById("topbarTitle").textContent = TAB_TITLES["code"];
+    runCodeAgent();
+}
+
+function buildQuickFiles(files) {
+    const el = document.getElementById("code-quick-files");
+    if (!el) return;
+    el.innerHTML = files.slice(0,6).map(f =>
+        `<span class="file-chip" onclick="document.getElementById('codeFileInput').value='${f.path}'">${f.path.split("/").pop()}</span>`
+    ).join("");
+}
+function buildQuickIssues(issues) {
+    const el = document.getElementById("task-quick-issues");
+    if (!el) return;
+    el.innerHTML = issues.slice(0,5).map(i =>
+        `<span class="file-chip" onclick="document.getElementById('taskIssueInput').value=${i.id};runTaskAgent()">#${i.id}</span>`
+    ).join("");
+}
+function buildQuickContributors(contribs) {
+    const el = document.getElementById("onboard-quick-contributors");
+    if (!el) return;
+    el.innerHTML = contribs.slice(0,5).map((c,idx) =>
+        `<span class="file-chip" onclick="document.getElementById('onboardInput').value=${idx+1};runOnboardingAgent()">${initials(c.name)}</span>`
+    ).join("");
+}
+
+function renderImportResult(d) {
+    const md = `## ${d.message || "Project imported"}
+
+**Project:** ${d.project_name || "Connected project"}  
+**Files indexed:** ${d.files_processed || 0}  
+**Docs indexed:** ${d.documentation_processed || 0}  
+**Commits indexed:** ${d.commits_processed || 0}
+
+ProjectMind AI can now explain files, recommend issue assignees, build onboarding plans, and scan documentation health from this knowledge base.`;
+    renderMd("importOutputText", md);
+}
+
+async function importLocalProject() {
+    clearError("importError");
+    setLoader("importLoader", true);
+    document.getElementById("importOutputText").innerHTML = "";
+    try {
+        const directory = document.getElementById("localDirectoryPath").value.trim();
+        const name = document.getElementById("localProjectName").value.trim() || "Imported Project";
+        if (!directory) throw new Error("Enter a local repository path.");
+
+        const res = await fetch("/api/v1/projects/import_local", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({directory_path: directory, project_name: name})
+        });
+        if (!res.ok) { const e = await res.json(); throw new Error(e.detail || res.statusText); }
+        const d = await res.json();
+        renderImportResult(d);
+        refreshStats();
+    } catch(err) {
+        showError("importError", err.message);
+    } finally {
+        setLoader("importLoader", false);
+    }
+}
+
+async function importGitLabProject() {
+    clearError("importError");
+    setLoader("importLoader", true);
+    document.getElementById("importOutputText").innerHTML = "";
+    try {
+        const idValue = document.getElementById("gitlabProjectId").value.trim();
+        const ref = document.getElementById("gitlabProjectRef").value.trim() || "main";
+        const body = {ref};
+        if (idValue) body.project_id = Number(idValue);
+
+        const res = await fetch("/api/v1/projects/import_gitlab", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify(body)
+        });
+        if (!res.ok) { const e = await res.json(); throw new Error(e.detail || res.statusText); }
+        const d = await res.json();
+        renderImportResult(d);
+        refreshStats();
+    } catch(err) {
+        showError("importError", err.message);
+    } finally {
+        setLoader("importLoader", false);
+    }
+}
+</script>
+
+<script>
+// CODE UNDERSTANDING
+async function runCodeAgent() {
+    const filePath = document.getElementById("codeFileInput").value.trim();
+    if (!filePath) return;
+    clearError("codeError");
+    setLoader("codeLoader", true);
+    document.getElementById("codeOutputText").innerHTML = "";
+    document.getElementById("code-context-panel").style.display = "none";
+
+    try {
+        const res = await fetch("/api/v1/code/explain", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({file_path: filePath})
+        });
+        if (!res.ok) { const e = await res.json(); throw new Error(e.detail || res.statusText); }
+        const d = await res.json();
+
+        renderMd("codeOutputText", d.explanation);
+
+        // Build context panel
+        const ctx = document.getElementById("code-context-body");
+        const relFiles  = (d.related_files  || []).map(f => `<span class="file-chip" onclick="document.getElementById('codeFileInput').value='${f}'">${f}</span>`).join(" ");
+        const relIssues = (d.related_issues || []).map(i => `<span class="tag tag-bug me-1">#${i.id} ${i.title}</span>`).join(" ");
+        const relDocs   = (d.related_docs   || []).map(doc => `<span class="tag tag-doc me-1">${doc.title}</span>`).join(" ");
+        const contribs  = (d.active_contributors || []).map(c =>
+            `<span class="me-2"><span class="avatar d-inline-grid" style="background:${avatarColor(c.name)};width:22px;height:22px;font-size:9px;border-radius:50%">${initials(c.name)}</span> <strong>${c.name}</strong></span>`
+        ).join("");
+
+        ctx.innerHTML = `
+            ${relFiles  ? `<div class="mb-2"><div class="form-label">Related Files</div><div class="d-flex flex-wrap gap-1">${relFiles}</div></div>` : ""}
+            ${relIssues ? `<div class="mb-2"><div class="form-label">Related Issues</div><div>${relIssues}</div></div>` : ""}
+            ${relDocs   ? `<div class="mb-2"><div class="form-label">Linked Docs</div><div>${relDocs}</div></div>` : ""}
+            ${contribs  ? `<div class="mb-1"><div class="form-label">Key Contributors</div><div>${contribs}</div></div>` : ""}
+        `;
+        document.getElementById("code-context-panel").style.display = "block";
+        document.getElementById("code-prompt-box").textContent =
+            `POST /api/v1/code/explain\n\nFile: ${d.file || filePath}\nRelated files: ${JSON.stringify(d.related_files)}\nRelated issues: ${JSON.stringify(d.related_issues)}\nContributors: ${JSON.stringify((d.active_contributors||[]).map(c=>c.name))}`;
+
+    } catch(err) {
+        showError("codeError", err.message);
+    } finally {
+        setLoader("codeLoader", false);
+    }
+}
+
+// TASK ASSIGNMENT
+function renderAssignment(d) {
+    const score = d.confidence_score || 0;
+    const level = score >= 75 ? "high" : score >= 55 ? "medium" : "low";
+    const md = `## Recommended: ${d.recommended_contributor}
+
+**Issue:** #${d.issue_id} - ${d.issue_title || d.title || ""}
+
+**Confidence:** ${score}%
+
+**Why this person:**
+${d.explanation}
+`;
+    renderMd("taskOutputText", md);
+
+    // Inject confidence bar after render
+    const out = document.getElementById("taskOutputText");
+    const bar = document.createElement("div");
+    bar.className = "confidence-wrap";
+    bar.innerHTML = `
+        <div class="confidence-label"><span>Confidence Score</span><span>${score}%</span></div>
+        <div class="confidence-bar"><div class="confidence-fill ${level}" style="width:0%"></div></div>`;
+    out.appendChild(bar);
+    setTimeout(() => bar.querySelector(".confidence-fill").style.width = score + "%", 50);
+}
+
+async function runTaskAgent() {
+    clearError("taskError");
+    setLoader("taskLoader", true);
+    document.getElementById("taskOutputText").innerHTML = "";
+    try {
+        const id = document.getElementById("taskIssueInput").value;
+        const res = await fetch(`/api/v1/tasks/assign/${id}`);
+        if (!res.ok) { const e = await res.json(); throw new Error(e.detail || res.statusText); }
+        renderAssignment(await res.json());
+    } catch(err) {
+        showError("taskError", err.message);
+    } finally {
+        setLoader("taskLoader", false);
+    }
+}
+
+async function createIssueAndAssign() {
+    clearError("taskError");
+    setLoader("taskLoader", true);
+    document.getElementById("taskOutputText").innerHTML = "";
+    try {
+        const res = await fetch("/api/v1/tasks/issues", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({
+                title:       document.getElementById("newIssueTitle").value,
+                description: document.getElementById("newIssueDescription").value,
+                labels:      document.getElementById("newIssueLabels").value
+            })
+        });
+        if (!res.ok) { const e = await res.json(); throw new Error(e.detail || res.statusText); }
+        const d = await res.json();
+        document.getElementById("taskIssueInput").value = d.issue_id;
+        renderAssignment(d);
+        refreshStats();
+    } catch(err) {
+        showError("taskError", err.message);
+    } finally {
+        setLoader("taskLoader", false);
+    }
+}
+
+// ONBOARDING
+async function runOnboardingAgent() {
+    clearError("onboardError");
+    setLoader("onboardLoader", true);
+    document.getElementById("onboardOutputText").innerHTML = "";
+    try {
+        const id = document.getElementById("onboardInput").value;
+        const res = await fetch(`/api/v1/onboarding/${id}`);
+        if (!res.ok) { const e = await res.json(); throw new Error(e.detail || res.statusText); }
+        const d = await res.json();
+        renderMd("onboardOutputText", d.roadmap || d.detail);
+    } catch(err) {
+        showError("onboardError", err.message);
+    } finally {
+        setLoader("onboardLoader", false);
+    }
+}
+
+async function runNewOnboardingAgent() {
+    clearError("onboardError");
+    setLoader("onboardLoader", true);
+    document.getElementById("onboardOutputText").innerHTML = "";
+    try {
+        const res = await fetch("/api/v1/onboarding/new", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({name: document.getElementById("newContributorName").value})
+        });
+        if (!res.ok) { const e = await res.json(); throw new Error(e.detail || res.statusText); }
+        const d = await res.json();
+        renderMd("onboardOutputText", d.roadmap || d.detail);
+    } catch(err) {
+        showError("onboardError", err.message);
+    } finally {
+        setLoader("onboardLoader", false);
+    }
+}
+
+// DOCS HEALTH
+async function runDocsAgent() {
+    clearError("docsError");
+    setLoader("docsLoader", true);
+    document.getElementById("docsOutputText").innerHTML = "";
+    try {
+        const res = await fetch("/api/v1/docs/health");
+        if (!res.ok) { const e = await res.json(); throw new Error(e.detail || res.statusText); }
+        const d = await res.json();
+
+        document.getElementById("docs-missing-count").textContent  = d.missing_count;
+        document.getElementById("docs-outdated-count").textContent = d.outdated_count;
+        document.getElementById("docs-summary").style.display = "block";
+
+        const statusIcon  = d.status === "healthy" ? "OK" : "Attention";
+        const outdatedMd  = (d.outdated_documentation || []).map(i =>
+            `- **${i.documentation}** -> \`${i.file_path}\`\n  *${i.reason}*`).join("\n") || "_None_";
+        const missingMd   = (d.missing_documentation  || []).map(i =>
+            `- \`${i.file_path}\` - ${i.reason}`).join("\n") || "_None_";
+
+        const md = `## ${statusIcon} Documentation Report
+
+**Status:** ${d.status === "healthy" ? "All docs up to date" : "Attention needed"}  
+**Missing:** ${d.missing_count} files &nbsp;|&nbsp; **Outdated:** ${d.outdated_count} files
+
+### Outdated Documentation
+${outdatedMd}
+
+### Missing Documentation
+${missingMd}
+
+---
+*${d.action}*
+`;
+        renderMd("docsOutputText", md);
+    } catch(err) {
+        showError("docsError", err.message);
+    } finally {
+        setLoader("docsLoader", false);
+    }
+}
+
+async function generateDocs() {
+    clearError("docsError");
+    setLoader("docsLoader", true);
+    document.getElementById("docsOutputText").innerHTML = "";
+    try {
+        const res = await fetch("/api/v1/docs/generate", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({file_path: document.getElementById("docGenInput").value})
+        });
+        if (!res.ok) { const e = await res.json(); throw new Error(e.detail || res.statusText); }
+        const d = await res.json();
+        renderMd("docsOutputText", d.new_documentation || d.detail);
+    } catch(err) {
+        showError("docsError", err.message);
+    } finally {
+        setLoader("docsLoader", false);
+    }
+}
+
+// AI LOGS
+async function loadLogs() {
+    try {
+        const res = await fetch("/api/v1/logs?limit=30");
+        const logs = await res.json();
+        const wrap = document.getElementById("logs-table-wrap");
+        if (!logs.length) {
+            wrap.innerHTML = '<div class="text-muted" style="font-size:13px">No AI decisions recorded yet. Use the features above to generate some.</div>';
+            return;
+        }
+        const typeColor = {
+            code_understanding: "blue",
+            task_assignment:    "green",
+            onboarding:         "purple",
+            onboarding_new:     "purple",
+        };
+        const typeIcon = {
+            code_understanding: "bi-file-code",
+            task_assignment:    "bi-person-check",
+            onboarding:         "bi-compass",
+            onboarding_new:     "bi-person-plus",
+        };
+        wrap.innerHTML = `
+        <table class="table table-sm" style="font-size:13px">
+          <thead><tr>
+            <th style="color:var(--muted);font-weight:700;font-size:11px;text-transform:uppercase">#</th>
+            <th style="color:var(--muted);font-weight:700;font-size:11px;text-transform:uppercase">Type</th>
+            <th style="color:var(--muted);font-weight:700;font-size:11px;text-transform:uppercase">Entity</th>
+            <th style="color:var(--muted);font-weight:700;font-size:11px;text-transform:uppercase">Result Summary</th>
+            <th style="color:var(--muted);font-weight:700;font-size:11px;text-transform:uppercase">When</th>
+          </tr></thead>
+          <tbody>
+            ${logs.map(l => {
+                const color = typeColor[l.analysis_type] || "other";
+                const icon  = typeIcon[l.analysis_type]  || "bi-stars";
+                const r = l.result || {};
+                let summary = "";
+                if (r.recommended)    summary = `-> <strong>${r.recommended}</strong> (${r.confidence}%)`;
+                else if (r.contributor) summary = `-> Mentor: <strong>${r.mentor || "-"}</strong>`;
+                else if (r.related_files) summary = `-> ${(r.related_files||[]).length} related files`;
+                const when = l.created_at ? new Date(l.created_at).toLocaleTimeString() : "-";
+                return `<tr>
+                  <td class="text-muted">${l.id}</td>
+                  <td><span class="tag tag-${color === 'blue' ? 'doc' : color === 'green' ? 'feat' : 'other'}"><i class="bi ${icon} me-1"></i>${l.analysis_type}</span></td>
+                  <td style="font-family:monospace;color:#3b82f6">${l.entity_id}</td>
+                  <td>${summary}</td>
+                  <td class="text-muted">${when}</td>
+                </tr>`;
+            }).join("")}
+          </tbody>
+        </table>`;
+    } catch(e) {
+        document.getElementById("logs-table-wrap").innerHTML = '<div class="text-muted">Could not load logs.</div>';
+    }
+}
+
+// Auto-load logs when tab opens
+document.querySelectorAll(".nav-link").forEach(link => {
+    link.addEventListener("click", () => {
+        if (link.dataset.tab === "logs") loadLogs();
+    });
+});
+
+// ENTER KEY SHORTCUTS
+document.getElementById("codeFileInput").addEventListener("keydown", e => { if(e.key==="Enter") runCodeAgent(); });
+document.getElementById("taskIssueInput").addEventListener("keydown", e => { if(e.key==="Enter") runTaskAgent(); });
+document.getElementById("newContributorName").addEventListener("keydown", e => { if(e.key==="Enter") runNewOnboardingAgent(); });
+document.getElementById("docGenInput").addEventListener("keydown", e => { if(e.key==="Enter") generateDocs(); });
+
+// BOOT
+refreshStats();
+</script>
+</body>
+</html>

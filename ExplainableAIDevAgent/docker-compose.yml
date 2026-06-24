@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/projectmind_ai
+      - GITLAB_URL=${GITLAB_URL:-https://gitlab.com}
+      - GITLAB_TOKEN=${GITLAB_TOKEN}
+      - GITLAB_PROJECT_ID=${GITLAB_PROJECT_ID}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - PROJECTMIND_AUTO_SEED=${PROJECTMIND_AUTO_SEED:-true}
+      - PROJECTMIND_CORS_ORIGINS=${PROJECTMIND_CORS_ORIGINS:-}
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; raise SystemExit(0 if requests.get('http://127.0.0.1:8000/api/v1/health', timeout=5).status_code == 200 else 1)"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=projectmind_ai
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
